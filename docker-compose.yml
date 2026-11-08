@@ -1,0 +1,22 @@
+# AgentSkills on its own. Put the values in a .env file next to this one (see .env.example).
+services:
+  skills:
+    build: .
+    restart: unless-stopped
+    environment:
+      SKILLS_PASSWORD: ${SKILLS_PASSWORD:?set a password of 20+ characters}
+      MCP_KEYS: ${MCP_KEYS:?name:key pairs, one per agent}
+      AGENT_NAMES: ${AGENT_NAMES:-}
+      SITE_TITLE: ${SITE_TITLE:-Skills}
+      SITE_SUBTITLE: ${SITE_SUBTITLE:-}
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      TRUSTED_PROXY_HEADER: ${TRUSTED_PROXY_HEADER:-}
+      REVIEW: ${REVIEW:-on}
+      PUBLIC_INDEX: ${PUBLIC_INDEX:-off}
+    volumes:
+      - skills-data:/data
+    ports:
+      - "8000:8000"
+
+volumes:
+  skills-data:
