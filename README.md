@@ -24,6 +24,8 @@ docker compose up -d --build
 
 **Easypanel:** a Compose service from this repository with `docker-compose.easypanel.yml` as the compose file. It opens no port on the server; point your proxy at `http://agentskills:8000`. Put the settings under Environment.
 
+Or use a small compose file of your own that builds this repository, with your settings in it and the secrets in Easypanel's environment:
+
 ```yaml
 services:
   skills:
