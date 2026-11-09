@@ -1,0 +1,32 @@
+# AgentSkills on Easypanel: a Compose service with source Git and this file as its path.
+# Put the values under Environment (see .env.example). No port is opened on the server; a proxy on
+# the easypanel network reaches the app at http://agentskills:8000. To run more than one
+# AgentSkills on the same Easypanel, give each its own alias.
+services:
+  skills:
+    build: .
+    restart: unless-stopped
+    environment:
+      SKILLS_PASSWORD: ${SKILLS_PASSWORD:?set a password of 20+ characters}
+      MCP_KEYS: ${MCP_KEYS:?name:key pairs, one per agent}
+      AGENT_NAMES: ${AGENT_NAMES:-}
+      SITE_TITLE: ${SITE_TITLE:-Skills}
+      SITE_SUBTITLE: ${SITE_SUBTITLE:-}
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      TRUSTED_PROXY_HEADER: ${TRUSTED_PROXY_HEADER:-}
+      REVIEW: ${REVIEW:-on}
+      PUBLIC_INDEX: ${PUBLIC_INDEX:-off}
+    volumes:
+      - skills-data:/data
+    networks:
+      default: {}
+      easypanel:
+        aliases:
+          - agentskills
+
+volumes:
+  skills-data:
+
+networks:
+  easypanel:
+    external: true
