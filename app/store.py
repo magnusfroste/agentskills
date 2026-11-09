@@ -237,6 +237,8 @@ class Store:
         clean, fm = clean_files(files)
         name, stamp = fm["name"], now()
         sha = checksum(clean)
+        flags = checks.scan(clean)
+        approve = auto_approve is True or (auto_approve == "clean" and not flags)  # "clean": only with nothing flagged
         with self.lock:
             meta = self.get(name)
             if meta:
@@ -262,7 +264,7 @@ class Store:
             info = {"version": n, "at": stamp, "by": by, "requested_by": " ".join(str(requested_by or "").split())[:80] or None,
                     "note": (note or "").strip()[:500] or None, "description": fm["description"], "sha256": sha,
                     "files": {p: {"bytes": len(b), "sha256": hashlib.sha256(b).hexdigest()} for p, b in sorted(clean.items())},
-                    "flags": checks.scan(clean), "status": "approved" if auto_approve else "pending", "reviews": []}
+                    "flags": flags, "status": "approved" if approve else "pending", "reviews": []}
             os.makedirs(self._dir(name), exist_ok=True)
             final, tmp = os.path.join(self._dir(name), f"v{n:04d}"), os.path.join(self._dir(name), f".v{n:04d}.part")
             shutil.rmtree(tmp, ignore_errors=True)  # what a crash left, never a version
@@ -273,7 +275,7 @@ class Store:
             os.rename(tmp, final)
             self._write_json(final + ".json", info)
             meta.update(version=n, updated=stamp, updated_by=by)
-            if auto_approve:
+            if approve:
                 meta["approved"] = n
             self._write_json(os.path.join(self._dir(name), "meta.json"), meta)
             return meta, info, True

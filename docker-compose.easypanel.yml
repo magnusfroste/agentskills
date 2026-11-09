@@ -14,7 +14,7 @@ services:
       SITE_SUBTITLE: ${SITE_SUBTITLE:-}
       PUBLIC_URL: ${PUBLIC_URL:-}
       TRUSTED_PROXY_HEADER: ${TRUSTED_PROXY_HEADER:-}
-      REVIEW: ${REVIEW:-on}
+      REVIEW: ${REVIEW:-off}
       PUBLIC_INDEX: ${PUBLIC_INDEX:-off}
     volumes:
       - skills-data:/data

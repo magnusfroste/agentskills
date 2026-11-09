@@ -12,7 +12,7 @@ Environment:
   SITE_TITLE            heading of the start page (default "Skills"); SITE_SUBTITLE below it
   PUBLIC_URL            e.g. https://skills.example.com, for the install addresses agents get
   TRUSTED_PROXY_HEADER  e.g. CF-Connecting-IP or X-Forwarded-For, when behind a proxy that sets it (for the lockout)
-  REVIEW                on (default) or off: off means a published version is shared at once
+  REVIEW                off (default): published means shared. auto: shared unless the scan flags something. on: a person approves every version
   PUBLIC_INDEX          on or off (default): on lets anyone install approved skills from /.well-known/skills
   DATA_DIR / PORT       default /data, 8000
 
@@ -43,7 +43,8 @@ TITLE = os.environ.get("SITE_TITLE", "Skills")
 SUBTITLE = os.environ.get("SITE_SUBTITLE", "")
 PUBLIC_URL = os.environ.get("PUBLIC_URL", "").rstrip("/")
 PROXY_HEADER = os.environ.get("TRUSTED_PROXY_HEADER", "")
-REVIEW = os.environ.get("REVIEW", "on").strip().lower() not in ("off", "0", "false", "no")
+_review = os.environ.get("REVIEW", "off").strip().lower()
+REVIEW = "off" if _review in ("off", "0", "false", "no", "") else "auto" if _review == "auto" else "on"  # anything unclear means a person looks
 PUBLIC_INDEX = os.environ.get("PUBLIC_INDEX", "off").strip().lower() in ("on", "1", "true", "yes")
 SESSION_DAYS, LOCKOUT_FAILS, LOCKOUT_SECONDS = 30, 10, 900
 COOKIE = "as_session"
@@ -195,7 +196,7 @@ def t_publish(a, who):
     distinct = a.get("distinct_from")
     meta, info, changed = store.publish(a.get("files"), who, note=a.get("note"), expected_version=a.get("expected_version"),
                                         requested_by=a.get("requested_by"), distinct_from=distinct if isinstance(distinct, list) else None,
-                                        auto_approve=not REVIEW)
+                                        auto_approve={"off": True, "auto": "clean", "on": False}[REVIEW])
     if changed:
         log(f"{who}: published {meta['name']} v{info['version']} ({info['status']}, {len(info['flags'])} flag(s))")
     state = ("Identical to the latest version, so nothing was added." if not changed else
@@ -281,7 +282,7 @@ def rpc(msg, who):
                                    "a second. install_info tells you how to install one so that it is there the next time the task comes up. "
                                    "After using a shared skill, tell skill_feedback how it went. Never put keys, passwords, customer data or "
                                    "install addresses in a skill: other agents read it."
-                                   + (" A person reviews every version before other agents can get it." if REVIEW else "")})
+                                   + {"on": " A person reviews every version before other agents can get it.", "auto": " A version the automatic scan flags waits for a person.", "off": ""}[REVIEW]})
     if method == "ping":
         return ok({})
     if method == "tools/list":
@@ -653,7 +654,7 @@ def main():
         ("mcp", f"POST :{port}/mcp, {len(TOOLS)} tools"),
         ("agents", f"{len(KEYS)} key(s): {', '.join(sorted(KEYS.values())) or '-'}"),
         ("skills", f"{len(skills)} ({sum(1 for m in skills if m.get('approved') and not m.get('retired'))} installable) in {DATA}"),
-        ("review", "a person approves every version" if REVIEW else "OFF: published means shared"),
+        ("review", {"on": "a person approves every version", "auto": "automatic, a person sees what the scan flags", "off": "off, published means shared"}[REVIEW]),
         ("index", "public" if PUBLIC_INDEX else "per agent, by private address"),
         ("python", f"{platform.python_version()}, started {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC"),
     ])
